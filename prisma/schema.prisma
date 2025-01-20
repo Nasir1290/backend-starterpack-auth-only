@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  fullName        String
+  firstName       String?
+  lastName        String?
+  nickName        String?
+  email           String           @unique
+  password        String
+  membership      Subscription[]
+  posts           Post[]
+  profileComplete Float            @default(0)
+  profilePic      String?
+  coverPic        String?
+  userStatus      UserStatus       @default(ACTIVE)
+  isOnline        Boolean?
+  isDeleted       Boolean          @default(false)
+  photos          Photo[]
+  albums          Album[]
+  documents       Document[]
+  documentFolders DocumentFolder[]
+  otp             Int?
+  isVerified      Boolean          @default(false)
+  role            UserRole
+  groupId         String?
+  otpExpiry    DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Subscription {
+  id          String               @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String[]             @db.ObjectId
+  title       String
+  price       Int
+  duration    SubscriptionDuration
+  description String
+  offerPrice  Int?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  User        User                 @relation(fields: [userId], references: [id])
+}
+
+model Document {
+  id      String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String         @db.ObjectId
+  title   String
+  content String[]
+  status  DocumentStatus
+  groupId String?        @db.ObjectId
+  User    User           @relation(fields: [userId], references: [id])
+  Group   Group?         @relation(fields: [groupId], references: [id])
+}
+
+model DocumentFolder {
+  id      String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String         @db.ObjectId
+  title   String
+  photos  String[]
+  status  DocumentStatus
+  groupId String?        @db.ObjectId
+  User    User           @relation(fields: [userId], references: [id])
+  Group   Group?         @relation(fields: [groupId], references: [id])
+}
+
+model Post {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  content   String
+  images    String[]
+  videos    String[]
+  documents String[]
+  likes     Like[]
+  comments  Comment[]
+  groupId   String    @db.ObjectId
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  User      User      @relation(fields: [userId], references: [id])
+  Group     Group     @relation(fields: [groupId], references: [id])
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  userId    String
+  content   String
+  images    String[]
+  videos    String[]
+  documents String[]
+  emojis    String[]
+  replies   Reply[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Post      Post     @relation(fields: [postId], references: [id])
+}
+
+model Reply {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  commentId String   @db.ObjectId
+  userId    String
+  content   String
+  images    String[]
+  videos    String[]
+  documents String[]
+  emojis    String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Comment   Comment  @relation(fields: [commentId], references: [id])
+}
+
+model Like {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  userId    String
+  reaction  Reaction
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Post      Post     @relation(fields: [postId], references: [id])
+}
+
+model Photo {
+  id       String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String      @db.ObjectId
+  photos   String[]
+  comments String?
+  status   PhotoStatus
+  groupId  String?     @db.ObjectId
+  User     User        @relation(fields: [userId], references: [id])
+  Group    Group?      @relation(fields: [groupId], references: [id])
+}
+
+model Album {
+  id      String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String      @db.ObjectId
+  title   String
+  photos  String[]
+  status  AlbumStatus
+  groupId String?     @db.ObjectId
+  User    User        @relation(fields: [userId], references: [id])
+  Group   Group?      @relation(fields: [groupId], references: [id])
+}
+
+model Group {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  membersId       String[]
+  groupName       String
+  groupType       String
+  status          GroupStatus
+  isActive        Boolean
+  description     String
+  organizer       Organizer
+  groupProfilePic String
+  coverPic        String
+  adminId         String
+  posts           Post[]
+  photos          Photo[]
+  albums          Album[]
+  documents       Document[]
+  documentFolders DocumentFolder[]
+  discussions     Discussion[]
+}
+
+model Discussion {
+  id      String            @id @default(auto()) @map("_id") @db.ObjectId
+  groupId String            @db.ObjectId
+  message String
+  replies DiscussionReply[]
+  Group   Group             @relation(fields: [groupId], references: [id])
+}
+
+model DiscussionReply {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  discussionId String     @db.ObjectId
+  message      String
+  Discussion   Discussion @relation(fields: [discussionId], references: [id])
+}
+
+model Notification {
+  id                 String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String
+  notificationType   NotificationType
+  notificationAccess Json
+}
+
+model Friend {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String
+  friendId    String
+  status      FriendStatus
+  restriction Restriction
+}
+
+enum Reaction {
+  LIKE
+  LOVE
+  ANGRY
+  SAD
+  WOW
+  FUNNY
+}
+
+enum UserRole {
+  ADMIN
+  SUPER_ADMIN
+  USER
+}
+
+enum SubscriptionDuration {
+  ONE_MONTH
+  SIX_MONTH
+  ONE_YEAR
+}
+
+enum DocumentStatus {
+  PUBLIC
+  ONLY_ME
+  ALL_MEMBERS
+  MY_CONNECTIONS
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum PhotoStatus {
+  PUBLIC
+  ONLY_ME
+  ALL_MEMBERS
+  MY_CONNECTIONS
+}
+
+enum AlbumStatus {
+  PUBLIC
+  ONLY_ME
+  ALL_MEMBERS
+  MY_CONNECTIONS
+}
+
+enum GroupStatus {
+  PUBLIC
+  PRIVATE
+}
+
+enum NotificationType {
+  MENTIONS
+  POSTS
+  ACCOUNT_SETTINGS
+  ACTIVITY_FEEDS
+  SOCIAL_GROUPS
+  DISCUSSION_FORUMS
+  PRIVATE_MESSAGE
+  MEMBER_CONNECTIONS
+}
+
+enum FriendStatus {
+  PENDING
+  ACCEPT
+  REJECT
+}
+
+enum Restriction {
+  CONNECTED
+  BLOCKED
+}
+
+type Organizer {
+  logo String
+  name String
+}
